@@ -330,7 +330,20 @@ sub speeddial {
         Carp::croak('Usage: speeddial($n)'); 
     }
 
-	my $api_url = $self->api_url_for('speeddial', $n);
+    return $self->api_get_request('speeddial', $n);
+
+}
+
+sub bookmark {
+    my ($self, @args) = @_;
+
+    return $self->api_get_request('bookmark', @args);
+}
+
+sub api_get_request {
+    my ($self, $datatype, @args) = @_;
+
+	my $api_url = $self->api_url_for($datatype, @args);
 
     $api_url->query_form(
         oauth_token => $self->access_token(),
@@ -357,7 +370,7 @@ sub speeddial {
 	my $oauth_url = $request->to_url();
 	my $response = $self->_do_oauth_request($oauth_url);
 
-	#print 'suo-url:', $oauth_url, "\n";
+	#warn "api-url: $oauth_url\n";
 
 	if (! $response || ref $response ne 'HASH' || $response->{ok} == 0) {
 		Carp::croak('Link API request failed. Please retry later.');

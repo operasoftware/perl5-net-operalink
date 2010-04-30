@@ -58,9 +58,6 @@ unless ($link->authorized) {
 my $res = $link->speeddial(1);
 print Data::Dumper::Dumper($res), "\n";
 
-$res = $link->speeddial(2);
-print Data::Dumper::Dumper($res), "\n";
-
-$res = $link->speeddial(3);
+$res = $link->bookmark();
 print Data::Dumper::Dumper($res), "\n";
 
