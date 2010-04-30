@@ -1,0 +1,66 @@
+#!/usr/bin/env perl
+
+# Update your My Opera status by running:
+#
+# $ ./status-update "If you see this, it worked!"
+
+use strict;
+use warnings;
+
+use Data::Dumper;
+use Net::OperaLink;
+
+# My Opera consumer key and secret
+our $key    = 'demo_key';
+our $secret = 'demo_secret';
+
+# Read tokens from a file for next time
+sub restore_tokens {
+	# Instead of hardwiring, you should load them from some file or db
+    return qw(
+ATmLbTNpCjPq3dNufOYA1i9p4AdmVhfs
+v8GZ4uGjelch8Fb6cZbZiMRm2AyJReez
+    );
+}
+
+# Save tokens to a file or database
+sub save_tokens {
+
+	# Instead of printing, you should save them somewhere, to retrieve them later
+    print 'oauth_token: ', $_[0], "\n",
+          'oauth_token_secret: ', $_[1], "\n";
+}
+
+my $link = Net::OperaLink->new(
+    consumer_key    => $key,
+    consumer_secret => $secret,
+);
+
+# You'll save the token and secret in cookie, config file or session database
+my ($access_token, $access_token_secret) = restore_tokens();
+if ($access_token && $access_token_secret) {
+    $link->access_token($access_token);
+    $link->access_token_secret($access_token_secret);
+}
+
+unless ($link->authorized) {
+    # The client is not yet authorized: Do it now
+    print "Authorize this app at ", $link->get_authorization_url, " and type ENTER to continue\n";
+
+	<STDIN>;
+
+	# Add verifier support when we're OAuth 1.0a compliant
+    my($access_token, $access_token_secret) = $link->request_access_token();
+
+    save_tokens($access_token, $access_token_secret); # if necessary
+}
+
+my $res = $link->speeddial(1);
+print Data::Dumper::Dumper($res), "\n";
+
+$res = $link->speeddial(2);
+print Data::Dumper::Dumper($res), "\n";
+
+$res = $link->speeddial(3);
+print Data::Dumper::Dumper($res), "\n";
+

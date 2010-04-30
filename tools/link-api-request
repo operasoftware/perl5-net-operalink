@@ -1,0 +1,5 @@
+SERVER=http://link-test.opera.com:8000
+REQUEST=$1
+
+wget -q --user-agent='OperaLinkAPI-Client/1.00' `./oauth-url --request_url=$SERVER/rest$REQUEST?oauth_token=AT2bH7kLLKrtj0jWmkBmXqWu6ubxFDUA --token=AT2bH7kLLKrtj0jWmkBmXqWu6ubxFDUA --token_secret=peVqAwZOd1lZHFk79NUrwCTGuHx8zDZW` -O - | xmllint --format -
+
