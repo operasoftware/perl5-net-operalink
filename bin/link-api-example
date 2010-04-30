@@ -1,8 +1,7 @@
 #!/usr/bin/env perl
-
-# Update your My Opera status by running:
 #
-# $ ./status-update "If you see this, it worked!"
+# Get your Opera Link speeddials and bookmarks
+#
 
 use strict;
 use warnings;
@@ -10,13 +9,13 @@ use warnings;
 use Data::Dumper;
 use Net::OperaLink;
 
-# My Opera consumer key and secret
+# Opera Link consumer key and secret. Put yours here.
 our $key    = 'demo_key';
 our $secret = 'demo_secret';
 
 # Read tokens from a file for next time
 sub restore_tokens {
-	# Instead of hardwiring, you should load them from some file or db
+	# Instead of hardcoding, you should load them from some file or db
     return qw(
 ATmLbTNpCjPq3dNufOYA1i9p4AdmVhfs
 v8GZ4uGjelch8Fb6cZbZiMRm2AyJReez
@@ -25,7 +24,6 @@ v8GZ4uGjelch8Fb6cZbZiMRm2AyJReez
 
 # Save tokens to a file or database
 sub save_tokens {
-
 	# Instead of printing, you should save them somewhere, to retrieve them later
     print 'oauth_token: ', $_[0], "\n",
           'oauth_token_secret: ', $_[1], "\n";
