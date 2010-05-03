@@ -8,6 +8,7 @@ package Net::OperaLink;
 
 our $VERSION = '0.01';
 
+use feature qw(state);
 use strict;
 use warnings;
 
@@ -16,17 +17,23 @@ use CGI            ();
 use LWP::UserAgent ();
 use Net::OAuth 0.19;
 use URI            ();
+use JSON::XS       ();
+
+use Net::OperaLink::Bookmark;
+use Net::OperaLink::Speeddial;
 
 # PRODUCTION MODE
-#use constant LINK_SERVER => 'http://link-server.opera.com';
+#use constant LINK_SERVER    => 'http://link-server.opera.com';
 #use constant OAUTH_PROVIDER => 'auth.opera.com';
-#use constant OAUTH_BASE_URL => 'https://' . OAUTH_PROVIDER . '/service/oauth';
 
 # TEST MODE
 use constant LINK_SERVER    => 'http://link-test.opera.com:8000';
-use constant LINK_API_URL   => LINK_SERVER . '/rest';
 use constant OAUTH_PROVIDER => 'auth-test.opera.com';
+
+# API/OAuth URLs
+use constant LINK_API_URL   => LINK_SERVER . '/rest';
 use constant OAUTH_BASE_URL => 'https://' . OAUTH_PROVIDER . '/service/oauth';
+
 
 sub new {
 	my ($class, %opts) = @_;
@@ -281,65 +288,6 @@ sub _random_string {
     return $str;
 }
 
-sub api_url_for {
-    my ($self, $datatype, @args) = @_;
-
-    my $root_url = LINK_API_URL;
-    my $uri;
-
-    $datatype = lc $datatype;
-
-    # Speeddials
-    if ($datatype eq 'speeddial') {
-        # Numeric index
-        if (@args == 1 && ((my $index = $args[0]) =~ m{^\d+$})) {
-            $uri = URI->new("$root_url/speeddial/$index/");
-        }
-        else {
-            $uri = URI->new("$root_url/speeddial/children/");
-        }
-    }
-
-    # Bookmarks
-    elsif ($datatype eq 'bookmark') {
-        # by ID
-        if (@args == 1 && ((my $id = $args[0]) =~ m{^\w+$})) {
-            $uri = URI->new("$root_url/bookmark/$id/");
-        }
-        else {
-            $uri = URI->new("$root_url/bookmark/children/");
-        }
-    }
-
-    #elsif {
-    # ...
-    #}
-
-    # Unsupported type
-    else {
-        Carp::croak("Unsupported datatype $datatype ?");
-    }
-
-    return $uri;
-}
-
-sub speeddial {
-    my ($self, $n) = @_;
-
-    if (not defined $n || not $n) {
-        Carp::croak('Usage: speeddial($n)'); 
-    }
-
-    return $self->api_get_request('speeddial', $n);
-
-}
-
-sub bookmark {
-    my ($self, @args) = @_;
-
-    return $self->api_get_request('bookmark', @args);
-}
-
 sub api_get_request {
     my ($self, $datatype, @args) = @_;
 
@@ -350,7 +298,7 @@ sub api_get_request {
         api_output => 'json',
     );
 
-	#print 'api-url:', $api_url, "\n";
+    #warn "api-url: $api_url\n";
     #print 'acc-tok:', $self->access_token(), "\n";
     #print 'acc-tok-sec:', $self->access_token_secret(), "\n";
 
@@ -373,10 +321,83 @@ sub api_get_request {
 	#warn "api-url: $oauth_url\n";
 
 	if (! $response || ref $response ne 'HASH' || $response->{ok} == 0) {
-		Carp::croak('Link API request failed. Please retry later.');
+		$self->error($response->{status});
+        return;
 	}
 
-	return $response;
+    # Given a HTTP::Response, return the data hash
+    return $self->api_result($response->{response});
+}
+
+sub _json_decoder {
+    state $json_obj = JSON::XS->new();
+    return $json_obj;
+}
+
+sub api_result { 
+    my ($self, $res) = @_;
+    my $json_str = $res->content;
+    my $json_obj = $self->_json_decoder();
+    return $json_obj->decode($json_str);
+}
+
+sub api_url_for {
+    my ($self, @args) = @_;
+
+    my $datatype = shift @args;
+    my $root_url = LINK_API_URL;
+    my $uri;
+
+    $datatype = ucfirst lc $datatype;
+
+    # Net::OperaLink + '::' + Bookmark/Speeddial/...
+    my $package = join('::', ref($self), $datatype);
+
+    #warn "package=$package\n";
+    #warn "args=".join(',',@args)."\n";
+    #warn "api_url_for=" . $package->api_url_for(@args) . "\n";
+
+    eval {
+        $uri = URI->new(
+            $root_url . "/" . $package->api_url_for(@args) . "/"
+        )
+    } or do {
+        Carp::croak("Unknown or unsupported datatype $datatype ?");
+    };
+
+    return $uri;
+}
+
+sub bookmark {
+    my ($self, $id) = @_;
+
+    if (not defined $id or not $id) {
+        Carp::croak('Usage: bookmark($id)');
+    }
+
+    return $self->api_get_request('bookmark', $id);
+}
+
+sub bookmarks {
+    my ($self) = @_;
+
+    return $self->api_get_request('bookmark', 'children');
+}
+
+sub speeddial {
+    my ($self, $id) = @_;
+
+    if (not defined $id || not $id) {
+        Carp::croak('Usage: speeddial($id)'); 
+    }
+
+    return $self->api_get_request('speeddial', $id);
+}
+
+sub speeddials {
+    my ($self) = @_;
+
+    return $self->api_get_request(qw(speeddial children));
 }
 
 1;

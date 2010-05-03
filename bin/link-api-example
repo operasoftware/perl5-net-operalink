@@ -6,6 +6,8 @@
 use strict;
 use warnings;
 
+use lib '../lib';
+
 use Data::Dumper;
 use Net::OperaLink;
 
@@ -54,8 +56,11 @@ unless ($link->authorized) {
 }
 
 my $res = $link->speeddial(1);
-print Data::Dumper::Dumper($res), "\n";
+print Dumper($res), "\n";
 
-$res = $link->bookmark();
-print Data::Dumper::Dumper($res), "\n";
+$res = $link->bookmarks();
+print Dumper($res), "\n";
+
+$res = $link->bookmark("C2C69E604EE811DF8536E0FA4A1F0025");
+print Dumper($res), "\n";
 
