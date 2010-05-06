@@ -329,6 +329,16 @@ sub api_get_request {
     return $self->api_result($response->{response});
 }
 
+sub error {
+    my $self = shift;
+
+    if (@_) {
+        $self->{error} = shift;
+    }
+
+    return $self->{error};
+}
+
 sub _json_decoder {
     state $json_obj = JSON::XS->new();
     return $json_obj;

@@ -56,11 +56,25 @@ unless ($link->authorized) {
 }
 
 my $res = $link->speeddial(1);
-print Dumper($res), "\n";
+if (not defined $res) {
+    print 'Error: ', $link->error(), "\n";
+}
+else {
+    print Dumper($res), "\n";
+}
 
 $res = $link->bookmarks();
-print Dumper($res), "\n";
+if (not defined $res) {
+    print 'Error: ', $link->error(), "\n";
+}
+else {
+    print Dumper($res), "\n";
+}
 
 $res = $link->bookmark("C2C69E604EE811DF8536E0FA4A1F0025");
-print Dumper($res), "\n";
-
+if (not defined $res) {
+    print 'Error: ', $link->error(), "\n";
+}
+else {
+    print Dumper($res), "\n";
+}
