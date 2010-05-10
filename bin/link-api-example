@@ -19,8 +19,8 @@ our $secret = 'demo_secret';
 sub restore_tokens {
 	# Instead of hardcoding, you should load them from some file or db
     return qw(
-ATmLbTNpCjPq3dNufOYA1i9p4AdmVhfs
-v8GZ4uGjelch8Fb6cZbZiMRm2AyJReez
+ATvYJQU99GsSLInTl9VcR0UYtzttgd9y
+hYpTXAlMPVQYPWQPxjURNGZEFjON4v9i
     );
 }
 
