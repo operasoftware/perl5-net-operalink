@@ -1,0 +1,13 @@
+#!/bin/sh
+
+TOKEN=$1
+SERVER=${2:-auth.opera.com}
+
+if [ -z $TOKEN ]; then
+    echo "Empty token?"
+    echo "Usage: $0 <oauth_token> [<auth-server>]"
+    exit
+fi
+
+echo Open your browser and go to:
+echo https://$SERVER/service/oauth/authorize_token?oauth_token=$TOKEN

@@ -1,0 +1,6 @@
+From auth.opera.com production, 2010/05/10
+
+Response from server, "oauth_token=ATvYJQU99GsSLInTl9VcR0UYtzttgd9y&oauth_token_secret=hYpTXAlMPVQYPWQPxjURNGZEFjON4v9i"
+
+ATvYJQU99GsSLInTl9VcR0UYtzttgd9y
+hYpTXAlMPVQYPWQPxjURNGZEFjON4v9i
