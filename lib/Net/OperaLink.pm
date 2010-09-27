@@ -6,7 +6,7 @@
 
 package Net::OperaLink;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 use feature qw(state);
 use strict;
@@ -16,15 +16,18 @@ use Carp           ();
 use CGI            ();
 use Data::Dumper   ();
 use LWP::UserAgent ();
-use Net::OAuth 0.19;
+use Net::OAuth 0.25;
 use URI            ();
 use JSON::XS       ();
 
 use Net::OperaLink::Bookmark;
 use Net::OperaLink::Speeddial;
 
+# Opera supports only OAuth 1.0a
+$Net::OAuth::PROTOCOL_VERSION = &Net::OAuth::PROTOCOL_VERSION_1_0A;
+
 # PRODUCTION MODE
-#use constant LINK_SERVER    => 'http://link-server.opera.com';
+#use constant LINK_SERVER    => 'http://api.link.opera.com';
 #use constant OAUTH_PROVIDER => 'auth.opera.com';
 
 # TEST MODE
@@ -126,8 +129,14 @@ sub get_authorization_url {
     # and then build the authorize URL
     my $oauth_resp = $self->request_request_token();
 
+    warn 'CONTENT=' . $oauth_resp;
+
     my $req_tok = $oauth_resp->{oauth_token};
     my $req_tok_secret = $oauth_resp->{oauth_token_secret};
+
+    if (! $req_tok || ! $req_tok_secret) {
+        Carp::croak("Couldn't get a valid request token from " . OAUTH_BASE_URL);
+    }
 
     # Store in the object for the access-token phase later
     $self->request_token($req_tok);
@@ -141,18 +150,23 @@ sub _do_oauth_request {
 
     my $ua = $self->_user_agent();
     my $resp = $ua->get($url);
-    my $ok = 0;
 
-    if ($resp->is_success) {
-        $ok = 1;
-    }
+	if ($resp->is_success) {
+		my $query = CGI->new($resp->content());
+		return {
+			ok => 1,
+            response => $resp,
+            content => $resp->content(),
+            data => { $query->Vars },
+		};
+	}
 
-    return {
-        status   => $resp->status_line,
-        ok       => $ok,
+	return {
+		ok => 0,
         response => $resp,
-        content  => $resp->content,
-    };
+        content => $resp->content(),
+		errstr => $resp->status_line(),
+	}
 
 }
 
@@ -173,7 +187,13 @@ sub oauth_url_for {
 }
 
 sub request_access_token {
-    my ($self) = @_;
+    my ($self, %args) = @_; 
+
+    if (! exists $args{verifier}) { 
+        Carp::croak "The 'verifier' argument is required. Check the docs."; 
+    } 
+
+    my $verifier = $args{verifier};
 
     my %opt = (
         step           => 'access_token',
@@ -181,7 +201,7 @@ sub request_access_token {
         request_url    => $self->oauth_url_for('access_token'),
         token          => $self->request_token(),
         token_secret   => $self->request_token_secret(),
-        # TODO: Add verifier too (requires compliance with OAuth 1.0A)
+        verifier       => $verifier,
     );
 
     my $request = $self->_prepare_request(%opt);
@@ -200,10 +220,12 @@ sub request_access_token {
         Carp::croak "Access-token request failed. Might be a temporary problem. Please retry later.";
     }
 
+    $response = $response->{data};
+
     # Store access token for future requests
     $self->access_token($response->{oauth_token});
     $self->access_token_secret($response->{oauth_token_secret});
-  
+ 
     # And return them as well, so user can save them to persistent storage
     return (
         $response->{oauth_token},
@@ -216,8 +238,9 @@ sub request_request_token {
 
     my %opt = (
         step => 'request_token',
+        callback => 'oob',
         request_method => 'GET',
-        request_url    => $self->oauth_url_for('request_token'),
+        request_url => $self->oauth_url_for('request_token'),
     );
 
     my $request = $self->_prepare_request(%opt);
@@ -234,7 +257,7 @@ sub request_request_token {
         Carp::croak "Request-token request failed. Might be a temporary problem. Please retry later.";
     }
 
-    return $response;
+    return $response->{data};
 }
 
 sub _fill_default_values {
@@ -250,11 +273,7 @@ sub _fill_default_values {
     # Opera OAuth provider supports only HMAC-SHA1
     $req->{signature_method} = 'HMAC-SHA1';
     $req->{timestamp} ||= time();
-    $req->{version} ||= '1.0';
-
-    if (lc $req->{version} eq '1.0a') {
-        $Net::OAuth::PROTOCOL_VERSION = Net::OAuth::PROTOCOL_VERSION_1_0A;
-    }
+    $req->{version} = '1.0';
 
     return $req;
 }
