@@ -26,13 +26,8 @@ use Net::OperaLink::Speeddial;
 # Opera supports only OAuth 1.0a
 $Net::OAuth::PROTOCOL_VERSION = &Net::OAuth::PROTOCOL_VERSION_1_0A;
 
-# PRODUCTION MODE
-#use constant LINK_SERVER    => 'http://api.link.opera.com';
-#use constant OAUTH_PROVIDER => 'auth.opera.com';
-
-# TEST MODE
-use constant LINK_SERVER    => 'http://link-test.opera.com:8000';
-use constant OAUTH_PROVIDER => 'auth-test.opera.com';
+use constant LINK_SERVER    => 'https://link.api.opera.com';
+use constant OAUTH_PROVIDER => 'auth.opera.com';
 
 # API/OAuth URLs
 use constant LINK_API_URL   => LINK_SERVER . '/rest';
@@ -337,7 +332,8 @@ sub api_get_request {
     my $oauth_url = $request->to_url();
     my $response = $self->_do_oauth_request($oauth_url);
 
-    #warn "api-url: $oauth_url\n";
+    warn "api-url: $oauth_url\n";
+    warn "response: " . Data::Dumper::Dumper($response) . "\n";
 
     if (! $response || ref $response ne 'HASH' || $response->{ok} == 0) {
         $self->error($response->{status});
