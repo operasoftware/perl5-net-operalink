@@ -34,7 +34,7 @@ sub datatype_url_root {
 }
 
 sub api_url_for {
-    my ($self, $type) = @_;
+    my ($self, $type,$extra) = @_;
 
     my $dt_url = $self->datatype_url_root();
     my $url;
@@ -45,10 +45,10 @@ sub api_url_for {
 
     if ($type eq 'children' or $type eq 'descendants') {
         $url = "$dt_url/$type";
-    }
-    else {
+    } else {
         my $id = $type;
         $url = "$dt_url/$id";
+        $url=$url."/$extra" if (defined $extra);
     }
 
     return $url;

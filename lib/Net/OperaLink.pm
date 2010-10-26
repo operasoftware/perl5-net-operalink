@@ -41,7 +41,7 @@ sub new {
 
     for (qw(consumer_key consumer_secret)) {
         if (! exists $opts{$_} || ! $opts{$_}) {
-            Carp::croak "Missing '$_'. Can't instance $class\n";
+            Carp::croak "Missing '$_'. Can't instance $class\n" if ($opts{croak});
         }
     }
 
@@ -53,6 +53,8 @@ sub new {
         _request_token => undef,
         _request_token_secret => undef,
         _authorized => 0,
+	_debug => $opts{debug},
+	_croak => $opts{croak},
     };
 
     bless $self, $class;
@@ -124,13 +126,15 @@ sub get_authorization_url {
     # and then build the authorize URL
     my $oauth_resp = $self->request_request_token();
 
-    warn 'CONTENT=' . $oauth_resp;
+    warn 'CONTENT=' . $oauth_resp if ($self->{_debug} >= 1);
 
     my $req_tok = $oauth_resp->{oauth_token};
     my $req_tok_secret = $oauth_resp->{oauth_token_secret};
 
     if (! $req_tok || ! $req_tok_secret) {
-        Carp::croak("Couldn't get a valid request token from " . OAUTH_BASE_URL);
+	$self->error("Couldn't get a valid request token from " . OAUTH_BASE_URL);
+        Carp::croak("Couldn't get a valid request token from " . OAUTH_BASE_URL) if ($self->{_croak});
+	return;
     }
 
     # Store in the object for the access-token phase later
@@ -185,7 +189,7 @@ sub request_access_token {
     my ($self, %args) = @_; 
 
     if (! exists $args{verifier}) { 
-        Carp::croak "The 'verifier' argument is required. Check the docs."; 
+        Carp::croak "The 'verifier' argument is required. Check the docs." if ($self->{_croak}); 
     } 
 
     my $verifier = $args{verifier};
@@ -201,7 +205,7 @@ sub request_access_token {
 
     my $request = $self->_prepare_request(%opt);
     if (! $request) {
-        Carp::croak "Unable to initialize access-token request";
+        Carp::croak "Unable to initialize access-token request"  if ($self->{_croak});
     }
 
     my $access_token_url = $request->to_url();
@@ -212,7 +216,9 @@ sub request_access_token {
 
     # Check if the request-token request failed
     if (! $response || ref $response ne 'HASH' || $response->{ok} == 0) {
-        Carp::croak "Access-token request failed. Might be a temporary problem. Please retry later.";
+	$self->error($response->{status} || $response->{errstr} || "Unknown error at request_request_token for ".$access_token_url);
+        Carp::croak "Access-token request failed. Might be a temporary problem. Please retry later.".($self->{_debug}?Dumper($response):"") if ($self->{_croak});
+	return;
     }
 
     $response = $response->{data};
@@ -240,7 +246,7 @@ sub request_request_token {
 
     my $request = $self->_prepare_request(%opt);
     if (! $request) {
-        Carp::croak "Unable to initialize request-token request";
+        Carp::croak "Unable to initialize request-token request" if ($self->{_croak});
     }
 
     my $request_token_url = $request->to_url();
@@ -249,7 +255,9 @@ sub request_request_token {
 
     # Check if the request-token request failed
     if (! $response || ref $response ne 'HASH' || $response->{ok} == 0) {
-        Carp::croak "Request-token request failed. Might be a temporary problem. Please retry later.";
+	$self->error($response->{status} || $response->{errstr} || "Unknown error at request_request_token for ".$request_token_url);
+        Carp::croak "Request-token request failed. Might be a temporary problem. Please retry later." if ($self->{_croak});
+	return;
     }
 
     return $response->{data};
@@ -326,32 +334,36 @@ sub api_get_request {
 
     my $request = $self->_prepare_request(%opt);
     if (! $request) {
-        Carp::croak('Unable to initialize api request');
+	$self->error('Unable to initialize api request');
+        Carp::croak('Unable to initialize api request') if ($self->{_croak});
+	return;
     }
 
     my $oauth_url = $request->to_url();
+    warn "api_get_request: url: $oauth_url\n"  if ($self->{_debug} >= 1); # optional debug spew is optional
+
     my $response = $self->_do_oauth_request($oauth_url);
 
-    warn "api-url: $oauth_url\n";
-    warn "response: " . Data::Dumper::Dumper($response) . "\n";
+    warn "response: " . Data::Dumper::Dumper($response) . "\n" if ($self->{_debug} >= 2); # spammy spew = higher debug level.
 
     if (! $response || ref $response ne 'HASH' || $response->{ok} == 0) {
-        $self->error($response->{status});
+	$self->error( $response->{status} || $response->{errstr} || "Unknown error at api_get_request for ".$oauth_url );
         return;
     }
 
     # Given a HTTP::Response, return the data hash
     return $self->api_result($response->{response});
 }
+sub debug {
+    my $self = shift;
+    $self->{_debug} = shift if (@_);
+    return ($self->{_debug}?$self->{_debug}:0);
+}
 
 sub error {
     my $self = shift;
-
-    if (@_) {
-        $self->{error} = shift;
-    }
-
-    return $self->{error};
+    $self->{error} = shift if (@_);
+    return ($self->{error}?$self->{error}:""); # ref to nothing instead of an invalid ref
 }
 
 sub _json_decoder {
@@ -380,32 +392,39 @@ sub api_url_for {
 
     #warn "package=$package\n";
     #warn "args=".join(',',@args)."\n";
-    #warn "api_url_for=" . $package->api_url_for(@args) . "\n";
+    #warn "api_url_for(@_)\n" if($self->{_debug});
 
     eval {
         $uri = URI->new(
             $root_url . "/" . $package->api_url_for(@args) . "/"
         )
     } or do {
-        Carp::croak("Unknown or unsupported datatype $datatype ?");
+	$self->error("Unknown or unsupported datatype $datatype ?");
+        Carp::croak("Unknown or unsupported datatype $datatype ?") if ($self->{_croak});
+	return;
     };
 
     return $uri;
 }
 
 sub bookmark {
-    my ($self, $id) = @_;
+#    my $self=shift;
+#    my $id=shift;
+
+    my ($self, $id,$extra) = @_;
 
     if (not defined $id or not $id) {
-        Carp::croak('Usage: bookmark($id)');
+	$self->error('Usage: bookmark($id)');
+        Carp::croak('Usage: bookmark($id)') if ($self->{_croak});
+	return;
     }
 
-    return $self->api_get_request('bookmark', $id);
+    return $self->api_get_request('bookmark', $id,$extra);
 }
 
 sub bookmarks {
-    my ($self) = @_;
-
+    my ($self) = shift;#@_;
+    
     return $self->api_get_request('bookmark', 'children');
 }
 
@@ -413,7 +432,9 @@ sub speeddial {
     my ($self, $id) = @_;
 
     if (not defined $id || not $id) {
+        $self->error('Usage: speeddial($id)'); 
         Carp::croak('Usage: speeddial($id)'); 
+	return;
     }
 
     return $self->api_get_request('speeddial', $id);

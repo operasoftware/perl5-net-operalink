@@ -18,6 +18,12 @@ use File::Slurp ();
 our $CONSUMER_KEY    = 'test_desktop_key';
 our $CONSUMER_SECRET = 'p2FlOFGr3XFm5gOwEKKDcg3CvA4pp0BC';
 
+if ( -e "$ENV{HOME}/.operaapi" ) { # lazy coder: record the values of the $CONSUMER vars as so: 'key=blahblahblah secret=omgwtfbbq'
+  open API,"<$ENV{HOME}/.operaapi";
+  ($CONSUMER_KEY,$CONSUMER_SECRET) = join('',<API>) =~ m,key=([a-z0-9]+).*?secret=([a-z0-9]+),simg or die "invalid ~/.operaapi";
+  close API;
+}
+
 my $rc_file = exists $ENV{HOME}
     ? "$ENV{HOME}/.operalinkrc"
     : ".operalinkrc" ;
@@ -41,6 +47,7 @@ sub restore_tokens {
     return @tokens;
 }
 
+
 # Save tokens to the .rc file
 sub save_tokens {
     my (@tokens) = @_;
@@ -54,6 +61,8 @@ sub save_tokens {
 my $link = Net::OperaLink->new(
     consumer_key    => $CONSUMER_KEY,
     consumer_secret => $CONSUMER_SECRET,
+    croak => 0, # I have no idea why perloo modules are always coded to be deathtraps. If you like the previous behavior, set to 1
+    debug => 1, # 1 prints get urls, etc, 2 dumps lwp response 
 );
 
 # You'll save the token and secret in cookie, config file or session database
@@ -65,35 +74,60 @@ if ($access_token && $access_token_secret) {
 
 unless ($link->authorized) {
     # The client is not yet authorized: Do it now
-    print
-        "Please authorize me at ", $link->get_authorization_url, " and then\n",
+    print "Please authorize me at ", $link->get_authorization_url, " and then\n",
         "type the verifier + ENTER to continue\n";
     chomp (my $verifier = <STDIN>);
     my($access_token, $access_token_secret) = $link->request_access_token(verifier => $verifier);
     save_tokens($access_token, $access_token_secret);
 }
 
-my $res = $link->speeddial(1);
-if (not defined $res) {
-    print 'Error: ', $link->error(), "\n";
-}
-else {
-    print Dumper($res), "\n";
+sub arr { 
+  return (ref($_[0]) eq 'ARRAY'? @{$_[0]} : undef);
 }
 
-$res = $link->bookmarks();
-if (not defined $res) {
-    print 'Error: ', $link->error(), "\n";
-}
-else {
-    print Dumper($res), "\n";
+sub hash {
+  return (ref($_[0]) eq 'HASH'? %{$_[0]} : undef);
 }
 
-$res = $link->bookmark("C2C69E604EE811DF8536E0FA4A1F0025");
-if (not defined $res) {
-    print 'Error: ', $link->error(), "\n";
+
+
+sub bm_print_recursive {
+  my %ent=hash(shift) or return;
+  my $indent=shift || 0;
+  die "bookmark depth of 256 reached, aborting for safety reasons." if ($indent>=256);
+  print "" . ("\t" x $indent ) . $ent{properties}{title} . ($ent{item_type} eq 'bookmark_folder'?'/':"\t$ent{properties}{uri}") . "\n";
+  if ($ent{item_type} eq 'bookmark_folder') {
+    if ( my $res = $link->bookmark("$ent{id}",'children' ) ) {
+      bm_print_recursive($_,$indent+1) foreach(arr($res));   
+    }
+  }
 }
-else {
-    print Dumper($res), "\n";
+
+
+$link->debug(2);
+
+my $res;
+
+if ($res = $link->speeddial(1)) {
+  print Dumper($res)."\n";
+} else {
+  print "Error: link->speeddial(1) - ".$link->error()."\n";
 }
+
+my $testid="C2C69E604EE811DF8536E0FA4A1F0025";
+
+if ( $res = $link->bookmark($testid) ) {
+  print Dumper($res);
+} else {
+  print "Error: link->bookmark($testid) - ".$link->error()."\n";
+}
+
+
+$link->debug(0);
+if ( $res = $link->bookmarks() ) {
+  bm_print_recursive($_) foreach(arr($res));
+} else {
+  print "Error: link->bookmarks() - ".$link->error()."\n";
+}
+
 
