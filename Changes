@@ -1,0 +1,11 @@
+== Tue Oct 26 2010 - 3rd party branch at http://github.com/atomicdryad/perl5-net-operalink ==
+
+* It is now possible to obtain the contents of a folder, via $link->bookmark($id,'children').;
+
+* Made debug optional: initialize with debug=>1 or debug=>2. Change via $link->debug(0),  $link->debug(1), etc.
+
+* Fixed module croak() usage that caused it to terminate any script that uses it, for just about any error. Death is now optional.
+  If you want Net::Operalink to kill your scripts, initialize with croak=>1
+
+* Fixed issue in request_access_token / request_request_token / api_get_request, where a non-existent 
+  $response->{status} was being passed to $self->error. 
