@@ -424,7 +424,7 @@ sub bookmark {
 
 sub bookmarks {
     my ($self, $extra) = @_;
-    return $self->api_get_request('bookmark', 'descendants') if ($extra =~ m,^(descendants|recurse)$,);
+    return $self->api_get_request('bookmark', 'descendants') if ((defined $extra) && ($extra =~ m,^(descendants|recurse)$,));
     return $self->api_get_request('bookmark', 'children');
 }
 
