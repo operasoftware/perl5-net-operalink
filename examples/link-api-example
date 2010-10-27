@@ -5,6 +5,8 @@
 # Usage:
 #   ./link-api-example
 
+our $HTMLOUT = (exists $ENV{HTTP_HOST}) || ($ARGV[0] eq '--html'); # todo: actual commandline utility script, actual cgi script
+
 use strict;
 use warnings;
 
@@ -15,18 +17,26 @@ use File::Slurp ();
 # Test keys. Get your own at:
 #   https://auth.opera.com/service/oauth/applications/
 
+
+print "Content-Type: text/html\n\n" if ($ENV{HTTP_HOST});
+
 our $CONSUMER_KEY    = 'test_desktop_key';
 our $CONSUMER_SECRET = 'p2FlOFGr3XFm5gOwEKKDcg3CvA4pp0BC';
 
-if ( -e "$ENV{HOME}/.operaapi" ) { # lazy coder: record the values of the $CONSUMER vars as so: 'key=blahblahblah secret=omgwtfbbq'
-  open API,"<$ENV{HOME}/.operaapi";
-  ($CONSUMER_KEY,$CONSUMER_SECRET) = join('',<API>) =~ m,key=([a-z0-9]+).*?secret=([a-z0-9]+),simg or die "invalid ~/.operaapi";
+our $CFGDIR=($ENV{HTTP_HOST} ? "/var/www/html/t" : $ENV{HOME} ); # quick-n-dirty cgi mode, don't expect this to handle apikey configuration via cgi
+
+
+if ( -e "$CFGDIR/.operaapi" ) { # lazy coder: record the values of the $CONSUMER vars as so: 'key=blahblahblah secret=omgwtfbbq'
+  open API,"<$CFGDIR/.operaapi";
+  ($CONSUMER_KEY,$CONSUMER_SECRET) = join('',<API>) =~ m,key=([a-z0-9]+).*?secret=([a-z0-9]+),simg or die "invalid $CFGDIR/.operaapi";
   close API;
 }
 
 my $rc_file = exists $ENV{HOME}
     ? "$ENV{HOME}/.operalinkrc"
     : ".operalinkrc" ;
+
+$rc_file="$CFGDIR/.operalinkrc" if ($ENV{HTTP_HOST});
 
 # Read tokens from the .rc file
 sub restore_tokens {
@@ -62,7 +72,7 @@ my $link = Net::OperaLink->new(
     consumer_key    => $CONSUMER_KEY,
     consumer_secret => $CONSUMER_SECRET,
     croak => 0, # I have no idea why perloo modules are always coded to be deathtraps. If you like the previous behavior, set to 1
-    debug => 1, # 1 prints get urls, etc, 2 dumps lwp response 
+    debug => 0, # 1 prints get urls, etc, 2 dumps lwp response 
 );
 
 # You'll save the token and secret in cookie, config file or session database
@@ -94,38 +104,44 @@ sub hash {
 sub bm_print_recursive {
   my %ent=hash(shift) or return;
   my $indent=shift || 0;
-  die "bookmark depth of 256 reached, aborting for safety reasons." if ($indent>=256);
-  print "" . ("\t" x $indent ) . $ent{properties}{title} . ($ent{item_type} eq 'bookmark_folder'?'/':"\t$ent{properties}{uri}") . "\n";
+  if ($HTMLOUT) {
+    print "<tr><td>" . ("&nbsp;" x ($indent*10) ) ."". ($ent{item_type} eq 'bookmark_folder'?"$ent{properties}{title}/":
+      "<a href=\"$ent{properties}{uri}\">$ent{properties}{title}</a>") . "</td><td><font size=-1 color=#550055>$ent{id}</font></td></tr>\n";
+  } else {
+    print "" . ("\t" x $indent ) . $ent{properties}{title} . ($ent{item_type} eq 'bookmark_folder'?'/':"\t$ent{properties}{uri}") . "\n";
+  }
   if ($ent{item_type} eq 'bookmark_folder') {
-    if ( my $res = $link->bookmark("$ent{id}",'children' ) ) {
-      bm_print_recursive($_,$indent+1) foreach(arr($res));   
-    }
+    bm_print_recursive($_,$indent+1) foreach(arr($ent{children}));   
   }
 }
 
-
-$link->debug(2);
-
 my $res;
 
-if ($res = $link->speeddial(1)) {
-  print Dumper($res)."\n";
-} else {
-  print "Error: link->speeddial(1) - ".$link->error()."\n";
-}
+if (!$HTMLOUT) {
+  $link->debug(2);
 
-my $testid="EB1B8E39EF1949E6BC6987A3769172F9";
+  if ($res = $link->speeddial(1)) {
+    print Dumper($res)."\n";
+  } else {
+    print "Error: link->speeddial(1) - ".$link->error()."\n";
+  }
 
-if ( $res = $link->bookmark($testid,'descendants') ) {
-  print Dumper($res);
-} else {
-  print "Error: link->bookmark($testid) - ".$link->error()."\n";
+  my $testid="C2C69E604EE811DF8536E0FA4A1F0025";
+
+  if ( $res = $link->bookmark($testid) ) {
+    print Dumper($res);
+  } else {
+    print "Error: link->bookmark($testid) - ".$link->error()."\n";
+  }
+
 }
-exit;
 
 $link->debug(0);
-if ( $res = $link->bookmarks() ) {
+
+if ( $res = $link->bookmarks('recurse') ) {
+  print "<table border=0>\n" if ($HTMLOUT);
   bm_print_recursive($_) foreach(arr($res));
+  print "</table>" if ($HTMLOUT);
 } else {
   print "Error: link->bookmarks() - ".$link->error()."\n";
 }
