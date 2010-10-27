@@ -1,3 +1,10 @@
+== Wed Oct 27 2010 - 3rd party branch at http://github.com/atomicdryad/perl5-net-operalink ==
+* lib/Net/OperaLink.pm: 'descendants' api parameter used via: $link->bookmarks('descendants') or $link->bookmarks('recurse').
+
+* examples/link-api-example: bm_print_recursive function now uses descendants, instead of inefficient multiple queries.
+
+* examples/link-api-example: minimalist cgi script mode.
+
 == Tue Oct 26 2010 - 3rd party branch at http://github.com/atomicdryad/perl5-net-operalink ==
 
 * It is now possible to obtain the contents of a folder, via $link->bookmark($id,'children').;

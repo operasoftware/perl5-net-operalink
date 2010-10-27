@@ -411,7 +411,7 @@ sub bookmark {
 #    my $self=shift;
 #    my $id=shift;
 
-    my ($self, $id,$extra) = @_;
+    my ($self, $id, $extra) = @_;
 
     if (not defined $id or not $id) {
 	$self->error('Usage: bookmark($id)');
@@ -419,12 +419,12 @@ sub bookmark {
 	return;
     }
 
-    return $self->api_get_request('bookmark', $id,$extra);
+    return $self->api_get_request('bookmark', $id, $extra);
 }
 
 sub bookmarks {
-    my ($self) = shift;#@_;
-    
+    my ($self, $extra) = @_;
+    return $self->api_get_request('bookmark', 'descendants') if ($extra =~ m,^(descendants|recurse)$,);
     return $self->api_get_request('bookmark', 'children');
 }
 

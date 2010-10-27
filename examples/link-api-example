@@ -114,14 +114,14 @@ if ($res = $link->speeddial(1)) {
   print "Error: link->speeddial(1) - ".$link->error()."\n";
 }
 
-my $testid="C2C69E604EE811DF8536E0FA4A1F0025";
+my $testid="EB1B8E39EF1949E6BC6987A3769172F9";
 
-if ( $res = $link->bookmark($testid) ) {
+if ( $res = $link->bookmark($testid,'descendants') ) {
   print Dumper($res);
 } else {
   print "Error: link->bookmark($testid) - ".$link->error()."\n";
 }
-
+exit;
 
 $link->debug(0);
 if ( $res = $link->bookmarks() ) {
