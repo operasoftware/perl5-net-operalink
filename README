@@ -1,3 +1,11 @@
+== Net::OperaLink ==
+
+A set of Perl classes to interface to the Opera Link API.
+
+== What is the Opera Link API ? ==
+
+http://www.opera.com/docs/apis/linkrest/
+
 == Example of usage ==
 
 Check out bin/link-api-example for an example.

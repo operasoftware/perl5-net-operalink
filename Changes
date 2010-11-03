@@ -1,0 +1,11 @@
+Revision history for Net-OperaLink
+
+0.03    2010-11-03 22:20:00 CET
+
+        Added query type for bookmark apis.
+
+0.02    October 2010
+
+        First public version.
+        Released source on github. CPAN to follow.
+

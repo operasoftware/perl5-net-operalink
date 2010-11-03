@@ -1,2 +1,0 @@
-oauth_token=AT2bH7kLLKrtj0jWmkBmXqWu6ubxFDUA
-oauth_token_secret=peVqAwZOd1lZHFk79NUrwCTGuHx8zDZW

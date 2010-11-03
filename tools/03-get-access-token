@@ -1,9 +1,0 @@
-#!/bin/sh
-
-TOKEN=$1
-TOKEN_SECRET=$2
-CONSUMER_KEY=${3:-demo_key}
-CONSUMER_SECRET=${4:-demo_secret}
-
-./oauth-url --request_url="http://auth.opera.com/service/oauth/access_token?oauth_token=$TOKEN" --token $TOKEN --token_secret $TOKEN_SECRET --consumer_key $CONSUMER_KEY --consumer_secret $CONSUMER_SECRET
-
