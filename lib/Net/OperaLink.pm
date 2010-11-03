@@ -1,12 +1,12 @@
 #
 # High-level API interface to Opera Link
 #
-# http://www.opera.com/link/
+# http://www.opera.com/docs/apis/linkrest/
 #
 
 package Net::OperaLink;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 use feature qw(state);
 use strict;
@@ -21,18 +21,22 @@ use URI            ();
 use JSON::XS       ();
 
 use Net::OperaLink::Bookmark;
+use Net::OperaLink::Note;
 use Net::OperaLink::Speeddial;
 
 # Opera supports only OAuth 1.0a
 $Net::OAuth::PROTOCOL_VERSION = &Net::OAuth::PROTOCOL_VERSION_1_0A;
 
-use constant LINK_SERVER    => 'https://link.api.opera.com';
-use constant OAUTH_PROVIDER => 'auth.opera.com';
+use constant {
+    LINK_SERVER    => 'https://link.api.opera.com',
+    OAUTH_PROVIDER => 'auth.opera.com',
+};
 
 # API/OAuth URLs
-use constant LINK_API_URL   => LINK_SERVER . '/rest';
-use constant OAUTH_BASE_URL => 'https://' . OAUTH_PROVIDER . '/service/oauth';
-
+use constant {
+    LINK_API_URL   => LINK_SERVER . '/rest',
+    OAUTH_BASE_URL => 'https://' . OAUTH_PROVIDER . '/service/oauth',
+};
 
 sub new {
     my ($class, %opts) = @_;
@@ -393,36 +397,53 @@ sub api_url_for {
     return $uri;
 }
 
-sub bookmark {
-    my ($self, $id) = @_;
+sub _datatype_query_node {
+    my ($self, $datatype, $id, $query_mode) = @_;
 
     if (not defined $id or not $id) {
-        Carp::croak('Usage: bookmark($id)');
+        $self->error("Incorrect API usage: $datatype(\$id) or $datatype(\$id, \$query_mode)");
+        return;
     }
 
-    return $self->api_get_request('bookmark', $id);
+    return $self->api_get_request($datatype, $id);
+}
+
+sub _datatype_query_subtree {
+    my ($self, $datatype, $query_mode) = @_;
+
+    $query_mode ||= 'children';
+
+    return $self->api_get_request($datatype, $query_mode);
+}
+
+sub bookmark {
+    my ($self, $id, $query_mode) = @_;
+    return $self->_datatype_query_node('bookmark', $id, $query_mode);
 }
 
 sub bookmarks {
-    my ($self) = @_;
+    my ($self, $query_mode) = @_;
+    return $self->_datatype_query_subtree('bookmark', $query_mode);
+}
 
-    return $self->api_get_request('bookmark', 'children');
+sub note {
+    my ($self, $id, $query_mode) = @_;
+    return $self->_datatype_query_node('note', $id, $query_mode);
+}
+
+sub notes {
+    my ($self, $query_mode) = @_;
+    return $self->_datatype_query_subtree('note', $query_mode);
 }
 
 sub speeddial {
-    my ($self, $id) = @_;
-
-    if (not defined $id || not $id) {
-        Carp::croak('Usage: speeddial($id)'); 
-    }
-
-    return $self->api_get_request('speeddial', $id);
+    my ($self, $id, $query_mode) = @_;
+    return $self->_datatype_query_node('speeddial', $id, $query_mode);
 }
 
 sub speeddials {
-    my ($self) = @_;
-
-    return $self->api_get_request(qw(speeddial children));
+    my ($self, $query_mode) = @_;
+    return $self->_datatype_query_subtree('speeddial', $query_mode);
 }
 
 1;
