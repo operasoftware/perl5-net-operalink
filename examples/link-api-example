@@ -8,7 +8,10 @@
 use strict;
 use warnings;
 
+use lib '../lib';
+
 use Data::Dumper;
+use JSON::XS ();
 use Net::OperaLink ();
 use File::Slurp ();
 
@@ -71,6 +74,24 @@ unless ($link->authorized) {
     chomp (my $verifier = <STDIN>);
     my($access_token, $access_token_secret) = $link->request_access_token(verifier => $verifier);
     save_tokens($access_token, $access_token_secret);
+}
+
+my $notes = $link->notes();
+
+for my $note (@{$notes}) {
+
+    my $id = $note->{id};
+    my $content = $note->{properties}->{content};
+    my @content = split /\r?\n/, $content;
+    my $title = $note->{properties}->{url} || $content[0];
+
+    printf "* %s (%s)\n", $title, $id;
+
+    for (@content) {
+        print "\t\t", $_, "\n";
+    }
+
+    print "\n";
 }
 
 my $res = $link->speeddial(1);
