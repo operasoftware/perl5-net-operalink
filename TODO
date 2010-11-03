@@ -1,0 +1,4 @@
+== TODO ==
+
+* When an access token expires, handle it gracefully instead of crashing
+  We could just catch 401s and reissue requests for req/access tokens
