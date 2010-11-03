@@ -336,8 +336,8 @@ sub api_get_request {
     my $oauth_url = $request->to_url();
     my $response = $self->_do_oauth_request($oauth_url);
 
-    warn "api-url: $oauth_url\n";
-    warn "response: " . Data::Dumper::Dumper($response) . "\n";
+    #warn "api-url: $oauth_url\n";
+    #warn "response: " . Data::Dumper::Dumper($response) . "\n";
 
     if (! $response || ref $response ne 'HASH' || $response->{ok} == 0) {
         $self->error($response->{status});
