@@ -6,8 +6,9 @@
 
 package Net::OperaLink;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
+use 5.010;
 use feature qw(state);
 use strict;
 use warnings;
@@ -447,4 +448,315 @@ sub speeddials {
 }
 
 1;
+
+__END__
+
+=pod
+
+=head1 NAME
+
+Net::OperaLink - a Perl interface to the My Opera Community API
+
+=head1 SYNOPSIS
+
+Example:
+
+    use Net::OperaLink;
+
+    my $link = Net::OperaLink->new(
+        consumer_key => '{your-consumer-key-here}',
+        consumer_secret => '{your-consumer-secret-here}',
+    );
+
+    if (! $link->authorized) {
+
+        print "I need authorization at: ", $link->get_authorization_url, "\n";
+        print "then type the verifier + ENTER to continue\n";
+
+        chomp (my $verifier = <STDIN>);
+
+        my ($access_token, $access_token_secret) = $link->request_access_token(verifier => $verifier);
+
+        # and save your precious access token + secret somewhere
+    }
+
+    my $bookmarks = $link->bookmarks();
+    my $speeddials = $link->speeddials();
+    my $notes = $link->notes();
+
+    my $single_bookmark = $link->bookmark('{bookmark-id}');
+
+    # ...
+
+In reality, it's a bit more complicated than that, but look at the
+complete example script provided in C<examples/link-api-example>.
+That should work out of the box, and provide you with a nice base
+to build upon.
+
+=head1 DESCRIPTION
+
+This module will be useful to you if you use the Opera Browser
+(L<http://www.opera.com/download/>) and you use its B<Opera Link> feature.
+
+=head2 What is Opera Link?
+
+Opera Link is a convenient way to share browser information between
+computers and devices, so you always have it with you, wherever you go.
+
+With most devices, you can synchronize custom search engines and typed history.
+Any Web-site address you have typed in one device will be available in your
+other computers or mobile phones running Opera.
+
+Opera Link synchronizes your:
+
+=over 4
+
+=item Bookmarks
+
+=item Speed Dial
+
+=item Personal bar
+
+=item Notes
+
+=item Typed browser history
+
+=item Custom searches
+
+=back
+
+=head2 The Opera Link API
+
+The B<Opera Link API> is a REST API that will let you access your
+own Opera Link data.
+
+The official Opera Link API documentation is up at
+L<http://www.opera.com/docs/apis/linkrest/>.
+
+=head2 How the module works
+
+If you know how L<Net::Twitter> works, then you will have no problem
+using L<Net::OperaLink> because it behaves in the same way,
+also based on OAuth.
+
+If you're not familiar with OAuth, go to L<http://oauth.net> and
+read the documentation there. There's also some very nice
+tutorials out there, such as:
+
+=over 4
+
+=item L<http://dev.opera.com/articles/view/introducing-the-opera-link-api/|Introducing the Opera Link API>
+
+=item L<http://dev.opera.com/articles/view/building-your-first-link-api-application/|Building your first Opera Link application>
+
+=item L<http://dev.opera.com/articles/view/gentle-introduction-to-oauth/|Gentle introduction to OAuth>
+
+=back
+
+and others of course.
+
+=head2 Opera Link API keys
+
+To use this module, B<you will need your set of OAuth API keys>.
+To get your own OAuth consumer key and secret, you need to go to:
+
+L<https://auth.opera.com/service/oauth/>
+
+where you will be able to B<sign up to the My Opera Community>
+and B<create your own application> and get your set of consumer keys.
+
+=head1 SUBROUTINES/METHODS
+
+=head2 CLASS CONSTRUCTOR
+
+=head3 C<new( %args )>
+
+Class constructor. 
+
+There's two, both mandatory, arguments,
+B<consumer_key> and B<consumer_secret>.
+
+Example:
+
+    my $link = Net::OperaLink->new(
+        consumer_key => '...',
+        consumer_secret => '...',
+    );
+
+To get your own consumer key and secret, you need to head over to:
+
+L<https://auth.opera.com/service/oauth/>
+
+where you will be able to sign up to the My Opera Community
+and create your own application and get your set of consumer keys.
+
+=head2 Opera Link-related methods
+
+=head3 C<bookmarks()>
+
+=head3 C<notes()>
+
+=head3 C<speeddials()>
+
+These three methods retrieve the entire tree of your bookmarks,
+notes and speeddials respectively.
+
+You will get back an array ref, where each element of the array is a 
+hash. See the included C<examples/link-api-example> script for
+a working example.
+
+=head3 C<bookmark($id)>
+
+=head3 C<bookmark($id, $query_type)>
+
+=head3 C<note($id)>
+
+=head3 C<note($id, $query_type)>
+
+=head3 C<speeddial($id)>
+
+=head3 C<speeddial($id, $query_type)>
+
+Retrieves data for a single bookmark (or note or speeddial).
+
+You need to specify the bookmark id. Typically you do this when you have
+already loaded a subtree of bookmarks and you know already the id.
+
+This is useful together with query type (C<$query_type>) on those datatypes
+that are structured in folders (bookmarks and notes for now), so you can
+get all the subentries and subfolders of a bookmark for example.
+
+There's 2 allowed values for C<$query_type>:
+
+=over 4
+
+=item C<children>
+
+Gets the 1st level children of the node (or root)
+
+=item C<descendants> or C<recurse>
+
+Gets all the descendants of a node.
+Using C<descendants> on a data type that doesn't support it (f.ex. speeddials)
+is not going to work, so don't do it.
+
+=back
+
+=head2 OAuth-related methods
+
+=head3 C<access_token()>
+
+=head3 C<access_token($new_value)>
+
+=head3 C<access_token_secret()>
+
+=head3 C<access_token_secret($new_value)>
+
+=head3 C<consumer_key()>
+
+=head3 C<consumer_key($new_value)>
+
+=head3 C<consumer_secret()>
+
+=head3 C<consumer_secret($new_value)>
+
+=head3 C<request_token()>
+
+=head3 C<request_token($new_value)>
+
+=head3 C<request_token_secret()>
+
+=head3 C<request_token_secret($value)>
+
+All of these are simple accessors/mutators, to store access token and secret data.
+This store is volatile. It doesn't get saved on disk or database.
+
+=head3 C<authorized()>
+
+Returns true if you already have a valid access token that's also
+authorized. If not, you will need to get a request token.
+You need to be familiar with the OAuth protocol flow.
+Refer to L<http://oauth.net/>.
+
+=head3 C<get_authorization_url()>
+
+Returns the URL that a user can use to authorize the request token.
+Under the hood, it first requests a new request token.
+
+=head3 C<oauth_url_for($oauth_phase)>
+
+=head3 C<oauth_url_for($oauth_phase, %arguments)>
+
+Internal method to generate URLs towards the Opera OAuth server.
+
+=head3 C<request_access_token( verifier => $verifier )>
+
+When the request token is authorized by the user, the user will
+be given a "verifier" code. You need to have the user input the
+verifier code, and use it for this method.
+
+In case of success, this method will return you both the
+OAuth access token and access token secret, which you
+will be able to use to finally perform the API requests,
+namely status update.
+
+=head3 C<request_request_token()>
+
+Requests and returns a new request token.
+First step of the OAuth flow. You can use this method
+B<also> to quickly check that your set of API keys work
+as expected.
+
+If they don't work, the method will croak (die badly
+with an error message).
+
+=head1 AUTHORS
+
+Cosimo Streppone, E<lt>cosimo@opera.comE<gt>
+
+=head1 BUGS
+
+Please report any bugs or feature requests to C<bug-net-operalink at rt.cpan.org>,
+or through the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Net-OperaLink>.
+We will be notified, and then you'll automatically be notified of progress on
+your bug as we make changes.
+
+=head1 SEE ALSO
+
+=head2 Opera Link REST API documentation
+
+L<http://www.opera.com/docs/apis/linkrest/>
+
+=head1 SUPPORT
+
+You can find documentation for this module with the perldoc command.
+
+    perldoc Net::OperaLink
+
+You can also look for information at:
+
+=over 4
+
+=item * RT: CPAN's request tracker
+
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Net-OperaLink>
+
+=item * AnnoCPAN: Annotated CPAN documentation
+
+L<http://annocpan.org/dist/Net-OperaLink>
+
+=item * CPAN Ratings
+
+L<http://cpanratings.perl.org/d/Net-OperaLink>
+
+=item * Search CPAN
+
+L<http://search.cpan.org/dist/Net-OperaLink>
+
+=back
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright (c), 2010 Opera Software ASA.
+All rights reserved.
 
