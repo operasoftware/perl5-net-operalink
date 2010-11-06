@@ -1,3 +1,4 @@
+use 5.010;
 use strict;
 use warnings;
 
@@ -10,6 +11,7 @@ WriteMakefile(
     VERSION_FROM        => 'lib/Net/OperaLink.pm',
     PL_FILES            => {},
     PREREQ_PM => {
+        'feature'          => 0,
         'Test::More'       => 0,
         'LWP::UserAgent'   => 0,
         'CGI'              => 0,
