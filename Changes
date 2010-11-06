@@ -1,5 +1,12 @@
 Revision history for Net-OperaLink
 
+0.04    2010-11-06 18:34:00 UTC
+
+        Added at least some decent documentation for Net::OperaLink.
+
+        Fixed test failures due to undeclared dependency on perl 5.10
+          "use feature" (RT #62777).
+
 0.03    2010-11-03 22:20:00 CET
 
         Added query type for bookmark apis.
