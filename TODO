@@ -2,3 +2,12 @@
 
 * When an access token expires, handle it gracefully instead of crashing
   We could just catch 401s and reissue requests for req/access tokens
+
+* Would be cool to empower datatype objects, to allow stuff like:
+
+  my $link = Net::OperaLink->new( ... );
+  my $bm = $link->bookmark('some-id');
+  my @children = $bm->children();
+
+
+
