@@ -16,7 +16,7 @@ WriteMakefile(
         'LWP::UserAgent'   => 0,
         'CGI'              => 0,
         'URI'              => 0,
-        'Net::OAuth'       => 0.19,
+        'Net::OAuth'       => 0.25,
         'JSON::XS'         => 0,
     },
     META_MERGE => {

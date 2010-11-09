@@ -1,5 +1,11 @@
 Revision history for Net-OperaLink
 
+0.05    2010-11-09 08:36:00 UTC
+
+        Fixed Net::OAuth dependency. We required 0.19 in the Makefile.PL
+          but we actually wanted 0.25 in the code. CPAN testers report:
+          http://www.cpantesters.org/cpan/report/bceaf16e-eb26-11df-8753-11ab0cdd0c06
+
 0.04    2010-11-06 18:34:00 UTC
 
         Added at least some decent documentation for Net::OperaLink.
