@@ -8,7 +8,7 @@ http://www.opera.com/docs/apis/linkrest/
 
 == Example of usage ==
 
-Check out bin/link-api-example for an example.
+Check out examples/link-api-example for an example.
 
 == The code ==
 
